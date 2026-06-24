@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ARIA - AI Productivity Companion</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#08080f;
+  --bg2:#10101a;
+  --card:#16161f;
+  --accent:#7c3aed;
+  --accent2:#a855f7;
+  --glow:rgba(124,58,237,0.25);
+  --text:#f1f5f9;
+  --muted:#64748b;
+  --border:rgba(255,255,255,0.07);
+  --green:#10b981;
+  --yellow:#f59e0b;
+  --red:#ef4444;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ── SETUP ── */
+#setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 30%,rgba(124,58,237,.18) 0%,transparent 65%);}
+.logo{font-size:52px;font-weight:900;background:linear-gradient(135deg,#7c3aed,#a855f7,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-2px;}
+.tagline{color:var(--muted);font-size:13px;text-align:center;margin:6px 0 36px;line-height:1.6;}
+.setup-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:400px;}
+.setup-card h2{font-size:17px;margin-bottom:6px;}
+.setup-card p{color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:18px;}
+.setup-card a{color:var(--accent2);}
+
+/* ── INPUTS ── */
+input,textarea,select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:110px;}
+select option{background:var(--bg2);}
+
+/* ── BUTTONS ── */
+.btn{display:block;width:100%;padding:13px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:10px;text-align:center;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px var(--glow);}
+.btn-primary:active{transform:scale(.98);}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);color:#fff;}
+.btn-sm{width:auto;padding:7px 14px;font-size:12px;margin-top:0;border-radius:8px;}
+
+/* ── APP SHELL ── */
+#app{display:none;flex-direction:column;min-height:100vh;}
+
+/* header */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;}
+.hdr-logo{font-size:20px;font-weight:900;background:linear-gradient(135deg,#7c3aed,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-sub{font-size:10px;color:var(--muted);}
+.load-pill{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+
+/* content */
+.content{flex:1;padding:18px 16px 100px;}
+.tab{display:none;}
+.tab.on{display:block;}
+.sec-title{font-size:21px;font-weight:800;margin-bottom:2px;}
+.sec-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ai-tag{font-size:9px;font-weight:700;background:rgba(124,58,237,.2);color:var(--accent2);padding:2px 8px;border-radius:20px;}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+.stat-n{font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-l{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* load bar */
+.bar-wrap{background:var(--bg2);border-radius:20px;height:10px;overflow:hidden;margin:10px 0 8px;}
+.bar{height:100%;border-radius:20px;transition:width .5s ease;}
+.bar-info{font-size:12px;color:var(--muted);}
+
+/* task item */
+.task-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+.chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:background .2s;font-size:12px;}
+.chk.done{background:var(--accent);border-color:var(--accent);}
+.t-info{flex:1;min-width:0;}
+.t-name{font-size:13px;font-weight:600;margin-bottom:4px;word-break:break-word;}
+.t-name.done{text-decoration:line-through;color:var(--muted);}
+.t-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+.p-high{background:rgba(239,68,68,.15);color:#ef4444;}
+.p-medium{background:rgba(245,158,11,.15);color:#f59e0b;}
+.p-low{background:rgba(16,185,129,.15);color:#10b981;}
+.t-date{font-size:10px;color:var(--muted);}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px;flex-shrink:0;}
+
+/* form */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.f-group{margin-bottom:10px;}
+.f-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;}
+.form-box{display:none;margin-top:14px;}
+.form-box.on{display:block;}
+.btn-row{display:flex;gap:8px;margin-top:4px;}
+.btn-row .btn{flex:1;margin-top:0;}
+
+/* empty */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty-ico{font-size:44px;margin-bottom:10px;}
+.empty-txt{font-size:13px;}
+
+/* ai response */
+.ai-box{background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:14px;margin-top:12px;font-size:13px;line-height:1.65;white-space:pre-wrap;}
+
+/* spinner */
+.spin{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent2);border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:14px 0;}
+
+/* chat */
+.chat-msgs{max-height:340px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;}
+.msg-u{align-self:flex-end;max-width:82%;}
+.msg-a{align-self:flex-start;max-width:90%;}
+.bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;white-space:pre-wrap;}
+.msg-u .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px;}
+.msg-a .bubble{background:var(--bg2);border-bottom-left-radius:4px;}
+.chat-row{display:flex;gap:8px;}
+.chat-row input{flex:1;}
+.chat-row .btn{width:auto;margin-top:0;padding:12px 16px;}
+
+/* bottom nav */
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;padding:6px 0 14px;z-index:99;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;cursor:pointer;color:var(--muted);font-size:10px;transition:color .15s;}
+.ni.on{color:var(--accent2);}
+.ni-ico{font-size:20px;}
+
+/* toast */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 20px;font-size:13px;z-index:999;white-space:nowrap;animation:tin 2.6s ease forwards;}
+@keyframes tin{0%{opacity:0;transform:translateX(-50%) translateY(8px);}12%{opacity:1;transform:translateX(-50%) translateY(0);}75%{opacity:1;}100%{opacity:0;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP ═══ -->
+<div id="setup">
+  <div class="logo">ARIA</div>
+  <div class="tagline">Autonomous Responsibility Intelligence Agent<br>Powered by Google Gemini AI ✦</div>
+  <div class="setup-card">
+    <h2>🔑 Enter Gemini API Key</h2>
+    <p>Get your free key from <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> → "Get API Key". Your key stays on your device only.</p>
+    <input type="password" id="keyIn" placeholder="AIzaSy..."/>
+    <button class="btn btn-primary" onclick="launch()">🚀 Launch ARIA</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-logo">ARIA ✦</div>
+      <div class="hdr-sub">AI Productivity Companion</div>
+    </div>
+    <div class="load-pill" id="loadPill">🟢 Free</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="tab on" id="t-home">
+      <div class="sec-title">Dashboard 👋</div>
+      <div class="sec-sub">Your productivity at a glance</div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">Total</div></div>
+        <div class="stat"><div class="stat-n" id="s-pend">0</div><div class="stat-l">Pending</div></div>
+        <div class="stat"><div class="stat-n" id="s-done">0</div><div class="stat-l">Done ✅</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🧠 Cognitive Load Meter</div>
+        <div class="bar-wrap"><div class="bar" id="loadBar" style="width:0%;background:linear-gradient(90deg,#10b981,#06b6d4);"></div></div>
+        <div class="bar-info" id="loadInfo">No tasks — you're free!</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔥 Top Priority Tasks</div>
+        <div id="topTasks"><div class="empty"><div class="empty-ico">✅</div><div class="empty-txt">No tasks yet!</div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🤖 AI Daily Briefing <span class="ai-tag">✦ GEMINI</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Get a smart productivity plan for your day</p>
+        <button class="btn btn-primary" onclick="briefing()">✨ Get Briefing</button>
+        <div id="briefOut"></div>
+      </div>
+    </div>
+
+    <!-- ── TASKS ── -->
+    <div class="tab" id="t-tasks">
+      <div class="sec-title">📋 My Tasks</div>
+      <div class="sec-sub">Add and manage your commitments</div>
+
+      <button class="btn btn-primary" id="addBtn" onclick="toggleForm()">＋ Add New Task</button>
+
+      <div class="form-box card" id="addForm">
+        <div class="card-title">➕ New Task</div>
+        <div class="f-group">
+          <label class="f-label">Task Name *</label>
+          <input id="tName" placeholder="e.g. Submit assignment"/>
+        </div>
+        <div class="form-row">
+          <div class="f-group">
+            <label class="f-label">Priority</label>
+            <select id="tPri">
+              <option value="high">🔴 High</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Deadline</label>
+            <input type="date" id="tDate"/>
+          </div>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Category</label>
+          <select id="tCat">
+            <option>📚 Study</option>
+            <option>💼 Work</option>
+            <option>🏠 Personal</option>
+            <option>💪 Health</option>
+            <option>💰 Finance</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="addTask()">✅ Add Task</button>
+          <button class="btn btn-ghost" onclick="toggleForm()">Cancel</button>
+        </div>
+      </div>
+
+      <div id="taskList" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- ── SCANNER ── -->
+    <div class="tab" id="t-scan">
+      <div class="sec-title">🔍 Commitment Scanner</div>
+      <div class="sec-sub">Paste any text — AI finds hidden tasks!</div>
+
+      <div class="card">
+        <div class="card-title">📝 Paste Your Text <span class="ai-tag">✦ GEMINI</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Paste WhatsApp messages, emails, professor notes etc.</p>
+        <textarea id="scanIn" placeholder="e.g. Hey bro, submit the project by Friday. Also don't forget Monday's meeting at 3pm and pay fees before 25th..."></textarea>
+        <button class="btn btn-primary" onclick="scanText()">🔍 Scan Commitments</button>
+        <div id="scanOut"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💡 How It Works</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          1️⃣ Paste any unstructured text<br>
+          2️⃣ Gemini AI reads & understands context<br>
+          3️⃣ Extracts hidden commitments & deadlines<br>
+          4️⃣ Add them to your task list instantly!
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NEGOTIATOR ── -->
+    <div class="tab" id="t-neg">
+      <div class="sec-title">🤝 Negotiation Agent</div>
+      <div class="sec-sub">AI drafts delay messages for you</div>
+
+      <div class="card">
+        <div class="card-title">✍️ Draft Delay Message <span class="ai-tag">✦ GEMINI</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Select a task you need more time for — ARIA writes the perfect message!</p>
+
+        <div class="f-group">
+          <label class="f-label">Task to Delay</label>
+          <select id="negTask"><option value="">-- Select task --</option></select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Send To</label>
+          <select id="negTo">
+            <option value="professor">👨‍🏫 Professor / Teacher</option>
+            <option value="manager">👔 Manager / Boss</option>
+            <option value="client">🤝 Client</option>
+            <option value="teammate">👥 Teammate</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Reason (optional)</label>
+          <input id="negReason" placeholder="e.g. I have another exam, health issue..."/>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Tone</label>
+          <select id="negTone">
+            <option value="professional">🎩 Professional</option>
+            <option value="polite and humble">🙏 Polite & Humble</option>
+            <option value="casual friendly">😊 Casual</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="negotiate()">✨ Draft Message</button>
+        <div id="negOut"></div>
+      </div>
+    </div>
+
+    <!-- ── AI CHAT ── -->
+    <div class="tab" id="t-chat">
+      <div class="sec-title">💬 AI Assistant</div>
+      <div class="sec-sub">Ask ARIA anything about productivity</div>
+
+      <div class="card">
+        <div class="chat-msgs" id="chatMsgs">
+          <div class="msg-a"><div class="bubble">👋 Hi! I'm ARIA, your AI productivity companion powered by Google Gemini.<br><br>Ask me anything!<br>• "How to stop procrastinating?"<br>• "Help me prioritize my tasks"<br>• "I'm overwhelmed, help!"</div></div>
+        </div>
+        <div class="chat-row">
+          <input id="chatIn" placeholder="Ask ARIA..." onkeypress="if(event.key==='Enter')chat()"/>
+          <button class="btn btn-primary" onclick="chat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- Bottom Nav -->
+  <div class="nav">
+    <div class="ni on" onclick="go('home',this)"><span class="ni-ico">🏠</span><span>Home</span></div>
+    <div class="ni" onclick="go('tasks',this)"><span class="ni-ico">📋</span><span>Tasks</span></div>
+    <div class="ni" onclick="go('scan',this)"><span class="ni-ico">🔍</span><span>Scanner</span></div>
+    <div class="ni" onclick="go('neg',this)"><span class="ni-ico">🤝</span><span>Agent</span></div>
+    <div class="ni" onclick="go('chat',this)"><span class="ni-ico">💬</span><span>Chat</span></div>
+  </div>
+
+</div><!-- end app -->
+
+<script>
+/* ── STATE ── */
+let KEY='', tasks=[];
+
+/* ── LAUNCH ── */
+function launch(){
+  try{
+    const k=document.getElementById('keyIn').value.trim();
+    if(!k||k.length<10){alert('Please enter your Gemini API key!');return;}
+    KEY=k;
+    try{localStorage.setItem('aria_k',k);}catch(e){}
+    boot();
+  }catch(e){alert('Launch Error: '+e.message);}
+}
+
+function boot(){
+  try{
+    document.getElementById('setup').style.display='none';
+    document.getElementById('app').style.display='flex';
+    try{
+      const saved=localStorage.getItem('aria_t');
+      if(saved) tasks=JSON.parse(saved);
+    }catch(e){}
+    render(); stats();
+    document.getElementById('tDate').valueAsDate=new Date();
+  }catch(e){alert('Boot Error: '+e.message);}
+}
+
+window.onload=()=>{
+  try{
+    const k=localStorage.getItem('aria_k');
+    if(k){KEY=k;boot();}
+  }catch(e){}
+};
+
+/* ── GEMINI ── */
+async function gemini(prompt){
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:700}})
+  });
+  const d=await r.json();
+  if(d.error) throw new Error(d.error.message);
+  return d.candidates[0].content.parts[0].text;
+}
+
+/* ── NAV ── */
+function go(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('on');
+  el.classList.add('on');
+  if(id==='neg') fillNegDrop();
+}
+
+/* ── TASKS ── */
+function toggleForm(){
+  document.getElementById('addForm').classList.toggle('on');
+}
+
+function addTask(){
+  const n=document.getElementById('tName').value.trim();
+  if(!n){toast('❌ Enter task name!');return;}
+  tasks.push({
+    id:Date.now(),
+    name:n,
+    pri:document.getElementById('tPri').value,
+    date:document.getElementById('tDate').value,
+    cat:document.getElementById('tCat').value,
+    done:false
+  });
+  save(); render(); stats();
+  document.getElementById('tName').value='';
+  document.getElementById('addForm').classList.remove('on');
+  toast('✅ Task added!');
+}
+
+function toggleDone(id){
+  const t=tasks.find(x=>x.id===id);
+  if(t){t.done=!t.done;save();render();stats();}
+}
+
+function del(id){
+  tasks=tasks.filter(x=>x.id!==id);
+  save();render();stats();toast('🗑️ Deleted');
+}
+
+function save(){localStorage.setItem('aria_t',JSON.stringify(tasks));}
+
+function render(){
+  const el=document.getElementById('taskList');
+  if(!tasks.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No tasks yet. Add your first task!</div></div>';
+    return;
+  }
+  const order={high:0,medium:1,low:2};
+  const sorted=[...tasks].sort((a,b)=>order[a.pri]-order[b.pri]);
+  el.innerHTML=sorted.map(t=>`
+    <div class="task-item">
+      <div class="chk ${t.done?'done':''}" onclick="toggleDone(${t.id})">${t.done?'✓':''}</div>
+      <div class="t-info">
+        <div class="t-name ${t.done?'done':''}">${t.name}</div>
+        <div class="t-meta">
+          <span class="badge p-${t.pri}">${t.pri.toUpperCase()}</span>
+          <span class="t-date">${t.cat}</span>
+          ${t.date?`<span class="t-date">📅 ${t.date}</span>`:''}
+        </div>
+      </div>
+      <button class="del-btn" onclick="del(${t.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+
+/* ── STATS & LOAD ── */
+function stats(){
+  const total=tasks.length;
+  const done=tasks.filter(t=>t.done).length;
+  const pend=total-done;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-pend').textContent=pend;
+  document.getElementById('s-done').textContent=done;
+
+  const hi=tasks.filter(t=>!t.done&&t.pri==='high').length;
+  const med=tasks.filter(t=>!t.done&&t.pri==='medium').length;
+  const lo=tasks.filter(t=>!t.done&&t.pri==='low').length;
+  const score=Math.min(100,(hi*30)+(med*15)+(lo*5));
+
+  const bar=document.getElementById('loadBar');
+  const pill=document.getElementById('loadPill');
+  const info=document.getElementById('loadInfo');
+  bar.style.width=score+'%';
+
+  if(score===0){
+    bar.style.background='linear-gradient(90deg,#10b981,#06b6d4)';
+    pill.style.cssText='background:rgba(16,185,129,.2);color:#10b981;';
+    pill.textContent='🟢 Free';
+    info.textContent='No pending tasks — completely free!';
+  } else if(score<40){
+    bar.style.background='linear-gradient(90deg,#10b981,#06b6d4)';
+    pill.style.cssText='background:rgba(16,185,129,.2);color:#10b981;';
+    pill.textContent='🟢 Light';
+    info.textContent=score+'% load — managing well!';
+  } else if(score<70){
+    bar.style.background='linear-gradient(90deg,#f59e0b,#fbbf24)';
+    pill.style.cssText='background:rgba(245,158,11,.2);color:#f59e0b;';
+    pill.textContent='🟡 Medium';
+    info.textContent=score+'% load — stay focused!';
+  } else {
+    bar.style.background='linear-gradient(90deg,#ef4444,#f97316)';
+    pill.style.cssText='background:rgba(239,68,68,.2);color:#ef4444;';
+    pill.textContent='🔴 Overload!';
+    info.textContent=score+'% load — use Negotiation Agent!';
+  }
+
+  topTasks();
+}
+
+function topTasks(){
+  const el=document.getElementById('topTasks');
+  const order={high:0,medium:1,low:2};
+  const top=tasks.filter(t=>!t.done).sort((a,b)=>order[a.pri]-order[b.pri]).slice(0,3);
+  if(!top.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">✅</div><div class="empty-txt">All done! Great work!</div></div>';
+    return;
+  }
+  el.innerHTML=top.map(t=>`
+    <div class="task-item">
+      <div class="chk" onclick="toggleDone(${t.id})"></div>
+      <div class="t-info">
+        <div class="t-name">${t.name}</div>
+        <div class="t-meta">
+          <span class="badge p-${t.pri}">${t.pri.toUpperCase()}</span>
+          ${t.date?`<span class="t-date">📅 ${t.date}</span>`:''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── DAILY BRIEFING ── */
+async function briefing(){
+  const out=document.getElementById('briefOut');
+  out.innerHTML='<div class="loading"><span class="spin"></span> Analyzing your day...</div>';
+  const pend=tasks.filter(t=>!t.done);
+  const list=pend.length?pend.map(t=>`- ${t.name} (${t.pri}, deadline: ${t.date||'none'})`).join('\n'):'No tasks';
+  try{
+    const res=await gemini(`You are ARIA, an AI productivity coach. Give a short, motivating daily briefing (4-5 lines max) for these pending tasks:\n${list}\nBe specific, practical, and energizing. Use emojis. Start with what to do FIRST today.`);
+    out.innerHTML=`<div class="ai-box">${res}</div>`;
+  }catch(e){out.innerHTML=`<div class="ai-box">❌ ${e.message}</div>`;}
+}
+
+/* ── SCANNER ── */
+async function scanText(){
+  const text=document.getElementById('scanIn').value.trim();
+  if(!text){toast('❌ Paste some text first!');return;}
+  const out=document.getElementById('scanOut');
+  out.innerHTML='<div class="loading"><span class="spin"></span> Scanning commitments...</div>';
+  try{
+    const res=await gemini(`You are ARIA. Extract ALL tasks, deadlines, and commitments from this text:\n\n"${text}"\n\nFormat each as:\nTASK: [task]\nPRIORITY: [High/Medium/Low]\nDEADLINE: [deadline or Not specified]\n---\n\nBe thorough. Find explicit AND implicit commitments. End with a 1-line summary.`);
+    out.innerHTML=`<div class="ai-box">✅ <strong>Scan Complete!</strong>\n\n${res}</div>`;
+  }catch(e){out.innerHTML=`<div class="ai-box">❌ ${e.message}</div>`;}
+}
+
+/* ── NEGOTIATOR ── */
+function fillNegDrop(){
+  const sel=document.getElementById('negTask');
+  const pend=tasks.filter(t=>!t.done);
+  sel.innerHTML='<option value="">-- Select task --</option>'+pend.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+}
+
+async function negotiate(){
+  const task=document.getElementById('negTask').value;
+  if(!task){toast('❌ Select a task!');return;}
+  const to=document.getElementById('negTo').value;
+  const reason=document.getElementById('negReason').value;
+  const tone=document.getElementById('negTone').value;
+  const out=document.getElementById('negOut');
+  out.innerHTML='<div class="loading"><span class="spin"></span> Drafting your message...</div>';
+  try{
+    const res=await gemini(`You are ARIA. Write a ${tone} message requesting deadline extension for: "${task}" to their ${to}.\n${reason?'Reason: '+reason:'No specific reason — make it sound genuine.'}\nRules: 3-4 sentences max, respectful, suggest alternative deadline, end positively. Write the message only, no explanations.`);
+    out.innerHTML=`<div class="ai-box">📝 <strong>Your Message:</strong>\n\n${res}\n\n<small style="color:var(--muted)">✏️ Personalize before sending!</small></div>`;
+  }catch(e){out.innerHTML=`<div class="ai-box">❌ ${e.message}</div>`;}
+}
+
+/* ── CHAT ── */
+async function chat(){
+  const inp=document.getElementById('chatIn');
+  const msg=inp.value.trim();
+  if(!msg) return;
+  const box=document.getElementById('chatMsgs');
+  box.innerHTML+=`<div class="msg-u"><div class="bubble">${msg}</div></div>`;
+  box.innerHTML+=`<div class="msg-a" id="typing"><div class="bubble"><span class="spin"></span></div></div>`;
+  inp.value=''; box.scrollTop=box.scrollHeight;
+  const ctx=tasks.filter(t=>!t.done).map(t=>t.name).join(', ')||'none';
+  try{
+    const res=await gemini(`You are ARIA, a smart AI productivity companion. User's pending tasks: ${ctx}\nUser: "${msg}"\nReply helpfully in 2-3 sentences. Be friendly, practical, use emojis sometimes.`);
+    document.getElementById('typing').remove();
+    box.innerHTML+=`<div class="msg-a"><div class="bubble">${res}</div></div>`;
+  }catch(e){
+    document.getElementById('typing').remove();
+    box.innerHTML+=`<div class="msg-a"><div class="bubble">❌ ${e.message}</div></div>`;
+  }
+  box.scrollTop=box.scrollHeight;
+}
+
+/* ── TOAST ── */
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+</script>
+</body>
+</html>
