@@ -159,7 +159,10 @@ select option{background:var(--bg2);}
       <div class="hdr-logo">ARIA ✦</div>
       <div class="hdr-sub">AI Productivity Companion</div>
     </div>
-    <div class="load-pill" id="loadPill">🟢 Free</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="load-pill" id="loadPill">🟢 Free</div>
+      <button onclick="logout()" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">🚪 Logout</button>
+    </div>
   </div>
 
   <!-- Content -->
@@ -337,6 +340,16 @@ select option{background:var(--bg2);}
 /* ── STATE ── */
 let KEY='', tasks=[];
 
+/* ── LOGOUT ── */
+function logout(){
+  if(!confirm('Logout karna chahte ho? Sab tasks delete ho jayenge!')) return;
+  try{localStorage.clear();}catch(e){}
+  KEY=''; tasks=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('setup').style.display='flex';
+  document.getElementById('keyIn').value='';
+}
+
 /* ── LAUNCH ── */
 function launch(){
   try{
@@ -370,7 +383,7 @@ window.onload=()=>{
 
 /* ── GEMINI ── */
 async function gemini(prompt){
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${KEY}`,{
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${KEY}`,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:700}})
